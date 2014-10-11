@@ -10,17 +10,16 @@ import time
 #import other python files
 import aMap
 import myDatabase
-#from aMap import requestDirveRoute, regeoDecode, getRegeoDecodeAddress
 
-reload(sys)
-sys.setdefaultencoding('utf-8')
+#reload(sys)
+#sys.setdefaultencoding('utf-8')
 
 
 
 #**************************************************************************
 #连接数据库，参数通过外部配置文件取得
 def initDatabase():
-	file_name = "Configure.ini"	
+	file_name = "../data/Configure.ini"	
 	config = ConfigParser.ConfigParser()
 	config.read( file_name )
 	
@@ -74,7 +73,7 @@ def getRouteInfo( cursor, route_id ):
 			#route['end_name'] 		= result[8]
 			route['end_id'] 		= result[7]
 			route['type'] 			= result[20] #路线分为找司机或者找乘客两种类型
-	except db.error, e:
+	except MySQLdb.Error, e:
 		print e
 
 	return route
@@ -92,7 +91,7 @@ def getLocation( cursor, point_id ):
 			point_location = dict()
 			point_location['longtitude'] = float(result[2])
 			point_location['latitude'] = float(result[3])
-	except db.error, e:
+	except MySQLdb.Error, e:
 		print e
 	
 	return point_location
@@ -159,14 +158,15 @@ def printRoute( route ):
 cursor = initDatabase()
 
 #myDatabase.createRecommendRouteTable( cursor )
-#myDatabase.createPointAreaTable( cursor )
+myDatabase.createPointAreaTable( cursor )
+
 
 #对应到youche_route数据表中的id列
 #route_id = 2178
 #---------- go through all route in database -----------------------
 try:
 	count = cursor.execute("SELECT id from youche_route ORDER BY id")
-	print 'database retrun %d line'%(count)
+	print 'database return %d line'%(count)
 	result = cursor.fetchall()
 except Exception, e:
 	print e
@@ -176,12 +176,17 @@ if result:
 		print '-'*30 + ' Total:' + str(count) +'  id:' + str(item[0]) + ' '+ '-'*30
 		route_id = item[0]
 		route = getRoute( cursor, route_id) 
-		addAddressToRoute( route )
-
+		
+		#addAddressToRoute( route )
+		
 		printRoute( route )
+		
+		#myDatabase.insertRouteToTable(cursor, route)
+		
+		myDatabase.inserPointToAreaTable(cursor, route )
+		#time.sleep(1)
 
-		time.sleep(1)
-
+print 'finish'
 
 
 

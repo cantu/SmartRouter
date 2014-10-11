@@ -1,4 +1,5 @@
 #!/usr/bin/python
+#encoding=utf-8
 # -*- coding: utf-8 -*-
 
 import ConfigParser
@@ -8,29 +9,28 @@ import json
 
 
 #***********************************************************
-#ÄæµØÀí±àÂë
-#ÊäÈëÒ»¸öµãµÄ¾­Î³¶È£¬·µ»Ø½ÖµÀÃû³Æ
+#é€†åœ°ç†ç¼–ç 
+#è¾“å…¥ä¸€ä¸ªç‚¹çš„ç»çº¬åº¦ï¼Œè¿”å›è¡—é“åç§°
 #http://restapi.amap.com/v3/geocode/regeo?location=116.396574,39.992706&key=608d75903d29ad471362f8c58c550daf&s=rsv3&radius=1000&extensions=all
 
 def regeoDecode( point ):
 
-	#ÇëÇóµØÖ·ÊÇ·ÖÎöÄæµØÀí±àÂëµÄÀı×Ó£¬×¥È¡µ½ÇëÇóµØÖ·
+	#è¯·æ±‚åœ°å€æ˜¯åˆ†æé€†åœ°ç†ç¼–ç çš„ä¾‹å­ï¼ŒæŠ“å–åˆ°è¯·æ±‚åœ°å€
 	URL = "http://restapi.amap.com/v3/geocode/regeo"
 	lat = point['lat']
 	lng = point['lng']
 
-	#ÅäÖÃ²ÎÊıÏê¼û£ºhttp://lbs.amap.com/api/javascript-api/reference/search_plugin/
+	#é…ç½®å‚æ•°è¯¦è§ï¼šhttp://lbs.amap.com/api/javascript-api/reference/search_plugin/
 	parameter = dict()
 	parameter['location'] = str(lng) + ',' + str(lat)
 	parameter['s'] 		  = 'rsv3'
 	parameter['radius']	  = '1000'
 
-	#ÄæµØÀí±àÂëÊ±£¬·µ»ØĞÅÏ¢ÏêÂÔ
-	#Ä¬ÈÏÖµ£ºbase£¬·µ»Ø»ù±¾µØÖ·ĞÅÏ¢£»
-	#È¡ÖµÎª£ºall£¬·µ»ØµØÖ·ĞÅÏ¢¼°¸½½üpoi¡¢µÀÂ·¡¢µÀÂ·½»²æ¿ÚµÈĞÅÏ¢
+	#é€†åœ°ç†ç¼–ç æ—¶ï¼Œè¿”å›ä¿¡æ¯è¯¦ç•¥
+	#é»˜è®¤å€¼ï¼šbaseï¼Œè¿”å›åŸºæœ¬åœ°å€ä¿¡æ¯ï¼›
+	#å–å€¼ä¸ºï¼šallï¼Œè¿”å›åœ°å€ä¿¡æ¯åŠé™„è¿‘poiã€é“è·¯ã€é“è·¯äº¤å‰å£ç­‰ä¿¡æ¯
 	parameter['extensions']='base'
-    
-	file_name = "Configure.ini"
+	file_name = "../data/Configure.ini"
 	section = "map"
 	config = ConfigParser.ConfigParser()
 	config.read( file_name )
@@ -52,8 +52,8 @@ def regeoDecode( point ):
 def requestDirveRoute( start, end):
 
 	URL = "http://restapi.amap.com/v3/direction/driving"
-
-	#ÅäÖÃ²ÎÊıÏê¼û£ºhttp://lbs.amap.com/api/javascript-api/reference/search_plugin/
+	
+	#é…ç½®å‚æ•°è¯¦è§ï¼šhttp://lbs.amap.com/api/javascript-api/reference/search_plugin/
 	parameter = dict()
 	parameter['origin'] = str(start['lng']) + ',' + str(start['lat'])
 	parameter['destination'] = str(end['lng']) + ',' +str(end['lat'])
@@ -62,10 +62,10 @@ def requestDirveRoute( start, end):
 	parameter['strategy'] = 0
 
 	#http://lbs.amap.com/api/javascript-api/reference/search_plugin/
-	#Ä¬ÈÏÖµ£ºbase£¬·µ»Ø»ù±¾µØÖ·ĞÅÏ¢
-	#µ±È¡ÖµÎª£ºall£¬·µ»ØDriveStep»ù±¾ĞÅÏ¢+DriveStepÏêÏ¸ĞÅÏ¢
+	#é»˜è®¤å€¼ï¼šbaseï¼Œè¿”å›åŸºæœ¬åœ°å€ä¿¡æ¯
+	#å½“å–å€¼ä¸ºï¼šallï¼Œè¿”å›DriveStepåŸºæœ¬ä¿¡æ¯+DriveStepè¯¦ç»†ä¿¡æ¯
 	parameter['extensions']='base'
-    
+	
 	file_name = "Configure.ini"
 	section = "map"
 	config = ConfigParser.ConfigParser()
