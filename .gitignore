@@ -1,0 +1,21 @@
+#add github to ingore files
+*.ini
+*.conf
+
+#
+*.apk
+
+#some data files
+*.sql
+*.db3
+*.db*
+
+#
+data/
+
+#
+*.log
+
+
+*.swp
+
