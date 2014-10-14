@@ -6,6 +6,7 @@ import ConfigParser
 import urllib2
 import urllib
 import json
+import datetime
 
 
 #***********************************************************
@@ -15,6 +16,7 @@ import json
 
 def regeoDecode( lng, lat):
 	
+	start_time = datetime.datetime.now()
 	#请求地址是分析逆地理编码的例子，抓取到请求地址
 	URL = "http://restapi.amap.com/v3/geocode/regeo"
 	#lat = point['lat']
@@ -48,7 +50,6 @@ def regeoDecode( lng, lat):
 		response = urllib2.urlopen( request )
 		json_str = response.read()
 		request_url = urllib.unquote( URL +'?'+ urllib.urlencode(parameter) )
-		
 		data = json.loads( json_str )
 	
 		if ( int(data['status']) == 1):
@@ -60,32 +61,32 @@ def regeoDecode( lng, lat):
 			print request_url
 			#print request_url
 			#return request_url
-		return address
+	end_time = datetime.datetime.now()
+	elapsed = (end_time -  start_time ).seconds
+	print( 'aMap regeo decode used time: ', elapsed)
+	return address
 #***********************************************************
 #http://restapi.amap.com/v3/direction/driving?origin=116.379018,39.865026&destination=116.321139,39.896028&strategy=0&extensions=&s=rsv3&key=608d75903d29ad471362f8c58c550daf
-def requestDirveRoute( start, end):
-
+def requestDirveRoute( start_lng, start_lat , end_lng, end_lat):
+	start_time = datetime.datetime.now()
 	URL = "http://restapi.amap.com/v3/direction/driving"
-	
 	#配置参数详见：http://lbs.amap.com/api/javascript-api/reference/search_plugin/
 	parameter = dict()
-	parameter['origin'] = str(start['lng']) + ',' + str(start['lat'])
-	parameter['destination'] = str(end['lng']) + ',' +str(end['lat'])
+	parameter['origin'] = str(start_lng) + ',' + str(start_lat)
+	parameter['destination'] = str(end_lng) + ',' +str(end_lat)
 	parameter['s'] 		  = 'rsv3'
-
 	parameter['strategy'] = 0
-
 	#http://lbs.amap.com/api/javascript-api/reference/search_plugin/
 	#默认值：base，返回基本地址信息
 	#当取值为：all，返回DriveStep基本信息+DriveStep详细信息
 	parameter['extensions']='base'
 	
-	file_name = "Configure.ini"
+	file_name = "../data/Configure.ini"
 	section = "map"
 	config = ConfigParser.ConfigParser()
 	config.read( file_name )
 	parameter['key']    = config.get( section, "amap_js_key")
-
+	
 	#HTTP get request
 	header={"User-Agent": "Mozilla-Firefox5.0"}
 	#header = { "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0"}
@@ -94,23 +95,47 @@ def requestDirveRoute( start, end):
 	json_str = response.read()
 	#print json_str
 	request_url = urllib.unquote( URL +'?'+ urllib.urlencode(parameter) )
-
-	return ( request_url, json_str )
+	print request_url
+	#check json ok?
+	isSuccess = False
+	tryTimes = 0
+	while( isSuccess == False):
+		data = json.loads( json_str )
+		if ( int(data['status']) == 1):
+			#distance = data['route']['paths']['ditance']
+			isSuccess = True
+		else:
+			#驾车路线规划有问题的请求
+			#http://restapi.amap.com/v3/direction/driving?origin=116.3350000000,39.9850000000&destination=121.3800000000,31.3100000000&strategy=0&s=rsv3&extensions=all&key=136474740ad745393d698348ab7c3153
+			isSuccess = False
+			tryTimes +=1
+			print 'error, request drive route  return error, try times:', tryTimes
+			print request_url
+		#10次请求都错误后返回错位的结果
+		if(tryTimes >10):
+			break;
+	end_time = datetime.datetime.now()
+	elapsed = (end_time -  start_time ).seconds
+	print( ' query one point all drive route total used time: ', elapsed)
+	print( 'aMap route request used time: ', elapsed)
+	return json_str
 
 #***********************************************************
-'''
-def getRegeoDecodeAddress( json_str, request_url ):
+#
+def parseDiverRoute( json_str ):
+	distance = 0
 	data = json.loads( json_str )
-	#print data
-	#print data.keys()
+	path = dict()
 	if ( int(data['status']) == 1):
-		address = data['regeocode']['formatted_address']
-		return address
+			path['distance'] = int(data['route']['paths'][0]['distance'])
+			path['duration'] = int(data['route']['paths'][0]['duration'])
 	else:
-		print 'error, aMap getRegeoDecodeAddress json return status is not 1'
-		print request_url
-		return ''
-'''
+		path['distance'] = 0
+		path['duration'] = 0
+		print 'Error, json state is not ok.'
+		
+	return path
+
 #***********************************************************
 
 def test():
@@ -127,7 +152,7 @@ def test():
 #************************************************************
 # 根据经纬度计算两点间距离
 # 经度 long  纬度 lat
-def GetDistance( lng1,  lat1,  lng2,  lat2):
+def GetDistanceByMath( lng1,  lat1,  lng2,  lat2):
     u'''''计算两点间球面距离 单位为m'''
     EARTH_RADIUS = 6378.137 # 地球周长/2*pi 此处地球周长取40075.02km pi=3.1415929134165665
     from math import asin,sin,cos,acos,radians, degrees,pow,sqrt, hypot,pi
@@ -152,11 +177,43 @@ def GetDistance( lng1,  lat1,  lng2,  lat2):
     print '参考：d2=',d
     return d
 
+
+#**************************************************************************
+def simpleLocation( longtitude, latitude ):
+
+    #http://www.storyday.com/wp-content/uploads/2008/09/latlung_dis.html
+    #经度(Longtitude)的小数点第三位(0.001度)大概距离是86M
+    #纬度(Latitude)     的小数点第三位(0.001度)大概距离是111M
+    #对第三位做简化处理，第三位要么是０，要么是５
+    #step: *2 -> 取小数点后两位 -> /2 -> 取小数点后三位  
+    simple_lng = float("%.3f"%(float("%.2f"%(longtitude*2))/2)) #86/(10/2)=430m
+    simple_lat = float("%.3f"%(float("%.2f"%(latitude  *2))/2))     #111*(10/2)=555m
+    
+    #check 
+    lng_last = int(simple_lng* 1000 %10)
+    lat_last  = int(simple_lat*1000%10 )
+    if (lng_last!=0 and lng_last!=5 and lat_last!=0 and lat_last!=5  ):
+        print 'simple location process error!'
+        exit(0)
+    return (simple_lng, simple_lat )
+
+#******************************************************************************************
+#再驾车路线表中，ｋｅｙ采用两点的组合名称
+#下面的规则可以合并　Ａ点到Ｂ点　　Ｂ点到Ａ点　两种情况
+def buildRouteName( start_lng, start_lat, end_lng, end_lat):
+    if(start_lng > end_lng):
+        route_name ='%s'% ('%.3f_%.3f_%.3f_%.3f'%(start_lng, start_lat, end_lng, end_lat))
+    else:
+        route_name = '%s'%( '%.3f_%.3f_%.3f_%.3f'%(end_lng, end_lat, start_lng, start_lat) )
+    #元组转字符串
+    string = "".join(route_name)
+    return string
+
 #**********************************************************
 #main function
 
 #test()
 
-#GetDistance(116.372, 39.865, 116.371, 39.865)
+#GetDistanceByMath(116.372, 39.865, 116.371, 39.865)
 
 	

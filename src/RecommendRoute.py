@@ -13,7 +13,7 @@ import ConfigParser
 
 #**************************************************************************
 #连接数据库，参数通过外部配置文件取得
-def initDatabase():
+def initRedis():
     file_name = "../data/Configure.ini"    
     config = ConfigParser.ConfigParser()
     config.read( file_name )
@@ -33,9 +33,10 @@ def initDatabase():
 
 
 #****************************************************************************
-r = initDatabase()
-r.set('name', 'tusion')
-print r.get('name')
-print r.keys()
-r.delete('name')
-print r.keys()
+def testRedis():
+    r = initRedis()
+    r.set('name', 'tusion')
+    print r.get('name')
+    print r.keys()
+    r.delete('name')
+    print r.keys()
