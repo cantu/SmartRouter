@@ -545,7 +545,51 @@ def inserPathToDriveTable( start, end):
     else:
         print 'drive route is already in table, do nothing'
                  
-               
+#*****************************************************************************************               
+def queryDistanceFromDriveTable( start_simple_lng, start_simple_lat, end_simple_lng, end_simple_lat):
+    distance = 0
+    #查询在数据库中是否已经有了
+    cursor = initDatabase()
+    route_name = aMap.buildRouteName( start_simple_lng, start_simple_lat, end_simple_lng, end_simple_lat )
+    query_sql = "SELECT distance FROM drive_route_tb WHERE  route_name = '%s'"%route_name
+    #print query_sql
+    count = cursor.execute( query_sql)
+    #print query_sql
+    #print "query record %s  wether in dirver_route_tb"%route_name
+    
+    #print count
+    if( count == 0 ): 
+        #如果没有这条路线
+        json_str = aMap.requestDirveRoute(start_simple_lng, start_simple_lat, end_simple_lng, end_simple_lat )
+        path = aMap.parseDiverRoute(json_str)
+        distance = path['distance']
+    else:
+        result = cursor.fetchone()
+        distance = result[0]
+        
+    return distance
+
+#***************************************************************
+#存储所有点对应的方块
+def createRecommendFactorTable(cursor):
+    sql ="DROP TABLE IF EXISTS recommend_2178_tb"
+    executeDB( cursor, sql )
+    
+    create_point_area_tb_sql = '''create table if not exists recommend_2178_tb(
+                    id            int unsigned not null auto_increment primary key comment '粗化经纬度后，起点对应的方块编号',
+                    car_route_id       int unsigned not null comment '车主路线',
+                    passenger_route_id       int unsigned not null comment '匹配的乘客路线',
+                    match_factor            float not null default 0.0 comment "综合排名因子，越大越好",
+                    car_extra_distance    int   not null default 0 comment '车主绕行距离',
+                    car_extra_factor        float not null default 0.0 comment "车主绕行因子： 越小越好",
+                    car_earn_factor         float  not null default 0.0 comment "车主收益因子： 越大越好",
+                    update_time     timestamp not null
+        )
+    '''
+    #print create_point_area_tb_sql
+    cursor.execute(create_point_area_tb_sql)
+
+
 
     
     
