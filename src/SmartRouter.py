@@ -96,6 +96,93 @@ def getRouteMatchScore(car, passenger):
     #print "getRouteMatchScore, d0=%d, d1=%d, d2=%d, d3=%d"%(distance_0, distance_1, distance_2, distance_3)
     # print "车主绕行距离=%d,  车主绕行因子=%f,  车主收益因子=%f"%( car_extra_distance, car_extra_factor, car_earn_factor)   
     return (match_factor, car_extra_distance, car_extra_factor, car_earn_factor)     
+
+#****************************************************************************************
+def findMatchRoute(test_car_route_id ):
+    #test_car_route_id = 2178
+    table_name = 'recommend_'+ str(test_car_route_id) +'_tb'
+    start_time = datetime.datetime.now()
+    #go through all route in database 
+    cursor = RouteInfo.initDatabase()
+    
+    #新建这条路线的匹配表
+    RouteInfo.createRecommendFactorTable(cursor, table_name)
+    
+    #车主信息
+    car = dict()
+    try:
+        get_car_sql =  "SELECT * from recommend_route_tb where route_id=%d "%test_car_route_id 
+        print get_car_sql
+        count = cursor.execute( get_car_sql)
+        print 'database return %d line'%(count)
+        result = cursor.fetchone()
+    except Exception, e:
+        print e
+        
+    if(result):
+        car['id']= result[0]
+        car['route_id'] = result[2]
+        car['start_simple_lng'] = result[6]
+        car['start_simple_lat'] =  result[7]
+        car['start_area_id'] = result[9]
+        car['end_simple_lng'] = result[12]
+        car['end_simple_lat'] = result[13]
+        car['end_area_id'] =result[15]
+    else:
+        print('error, can not get car info')    
+            
+    # scan all other route to find match route        
+    try:
+        count = cursor.execute("SELECT * from recommend_route_tb ORDER BY id")
+        print 'database return %d line'%(count)
+        result = cursor.fetchall()
+    except Exception, e:
+        print e
+    
+    if result:
+        i = 0; #passenger index
+        car_extra_distance =[]
+        car_extra_factor=[]
+        car_earn_factor=[]
+        car_match_factor =[]
+        for item in result:
+            passenger = dict()
+            now = datetime.datetime.now()
+            cost_time = (now - start_time).seconds
+            print '-'*10+ '[Smart Route]  '+ ' Total:' + str(count) +'  id:' + str(item[0]) + ',  cost time:  ' +str(cost_time) + '-'*30
+            passenger['id']= item[0]
+            passenger['route_id'] = item[2]
+            passenger['start_simple_lng'] = item[6]
+            passenger['start_simple_lat'] =  item[7]
+            passenger['start_area_id'] = item[9]
+            passenger['end_simple_lng'] = item[12]
+            passenger['end_simple_lat'] = item[13]
+            passenger['end_area_id'] =item[15]
+            
+            print "car_route_id=%d,  passenger_route_id=%d"%(car['route_id'], passenger['route_id'])
+            
+            #car route self
+            if ( passenger['route_id'] == test_car_route_id ):
+                continue
+            
+            (match_factor, distance, extra_factor, earn_factor) = getRouteMatchScore(car, passenger)
+            car_extra_distance.append(distance)
+            car_extra_factor.append(earn_factor)
+            car_earn_factor.append(earn_factor)
+            car_match_factor.append(match_factor)
+            #print "车主绕行距离=%d,  车主绕行因子=%f,  车主收益因子=%f"%( car_extra_distance[i], car_extra_factor[i], car_earn_factor[i])   
+            i +=1
+            
+            insert_sql = "INSERT INTO %s( id, car_route_id, passenger_route_id, match_factor, \
+                                car_extra_distance,car_extra_factor, car_earn_factor,  update_time)\
+                                VALUES(NULL, '%d', '%d', '%.3f', '%d',  '%.3f', '%.3f',  now() ) " %\
+                                ( table_name, car['route_id'], passenger['route_id'], match_factor, distance, extra_factor, earn_factor )
+            #print insert_sql
+            cursor.execute( insert_sql );
+    
+    print 'finish '
+    cursor.close()
+    
 #***********************************************************************************
 #main function    
 
@@ -104,94 +191,16 @@ def getRouteMatchScore(car, passenger):
 #中关村街道恒兴大厦(东门)                start_simple( 116.335, 39.985),     area_id =1
 #通州区梨园地区新华联家园(南区)        end_simple( 116.645, 39.890),     area_id=326
 
-test_car_route_id = 2178
-start_time = datetime.datetime.now()
-#go through all route in database 
-cursor = RouteInfo.initDatabase()
+#findMatchRoute(2178)
+findMatchRoute(20)
+findMatchRoute(814)
+findMatchRoute(928)
 
-#新建这条路线的匹配表
-RouteInfo.createRecommendFactorTable(cursor)
-
-#车主信息
-car = dict()
-try:
-    get_car_sql =  "SELECT * from recommend_route_tb where route_id=%d "%test_car_route_id 
-    print get_car_sql
-    count = cursor.execute( get_car_sql)
-    print 'database return %d line'%(count)
-    result = cursor.fetchone()
-except Exception, e:
-    print e
-    
-if(result):
-    car['id']= result[0]
-    car['route_id'] = result[2]
-    car['start_simple_lng'] = result[6]
-    car['start_simple_lat'] =  result[7]
-    car['start_area_id'] = result[9]
-    car['end_simple_lng'] = result[12]
-    car['end_simple_lat'] = result[13]
-    car['end_area_id'] =result[15]
-else:
-    print('error, can not get car info')    
-        
-# scan all other route to find match route        
-try:
-    count = cursor.execute("SELECT * from recommend_route_tb ORDER BY id")
-    print 'database return %d line'%(count)
-    result = cursor.fetchall()
-except Exception, e:
-    print e
-
-if result:
-    i = 0; #passenger index
-    car_extra_distance =[]
-    car_extra_factor=[]
-    car_earn_factor=[]
-    car_match_factor =[]
-    for item in result:
-        passenger = dict()
-        now = datetime.datetime.now()
-        cost_time = (now - start_time).seconds
-        print '-'*10+ '[Smart Route]  '+ ' Total:' + str(count) +'  id:' + str(item[0]) + ',  cost time:  ' +str(cost_time) + '-'*30
-        passenger['id']= item[0]
-        passenger['route_id'] = item[2]
-        passenger['start_simple_lng'] = item[6]
-        passenger['start_simple_lat'] =  item[7]
-        passenger['start_area_id'] = item[9]
-        passenger['end_simple_lng'] = item[12]
-        passenger['end_simple_lat'] = item[13]
-        passenger['end_area_id'] =item[15]
-        
-        print "car_route_id=%d,  passenger_route_id=%d"%(car['route_id'], passenger['route_id'])
-        
-        #car route self
-        if ( passenger['route_id'] == test_car_route_id ):
-            continue
-        
-        (match_factor, distance, extra_factor, earn_factor) = getRouteMatchScore(car, passenger)
-        car_extra_distance.append(distance)
-        car_extra_factor.append(earn_factor)
-        car_earn_factor.append(earn_factor)
-        car_match_factor.append(match_factor)
-        #print "车主绕行距离=%d,  车主绕行因子=%f,  车主收益因子=%f"%( car_extra_distance[i], car_extra_factor[i], car_earn_factor[i])   
-        i +=1
-        
-        insert_sql = "INSERT INTO recommend_2178_tb( id, car_route_id, passenger_route_id, match_factor, \
-                            car_extra_distance,car_extra_factor, car_earn_factor,  update_time)\
-                            VALUES(NULL, '%d', '%d', '%.3f', '%d',  '%.3f', '%.3f',  now() ) " %\
-                            ( car['route_id'], passenger['route_id'], match_factor, distance, extra_factor, earn_factor )
-        #print insert_sql
-        cursor.execute( insert_sql );
-
-        
-print 'finish '
-cursor.close()
 
     
 #SELECT * FROM youche_info.recommend_2178_tb order by car_extra_factor limit 30;
-
-
+#SELECT * FROM `recommend_route_tb` WHERE start_address LIKE '%大兴%'
+#SELECT * FROM youche_info.recommend_20_tb where car_extra_factor <0.1 order by car_earn_factor desc limit 30;
 
 
 

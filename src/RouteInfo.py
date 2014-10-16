@@ -528,7 +528,7 @@ def inserPathToDriveTable( start, end):
     #print query_sql
     count = cursor.execute( query_sql)
     #print query_sql
-    print "query record %s  wether in dirver_route_tb"%route_name
+    print "query record %s  weather in dirver_route_tb"%route_name
     
     #print count
     if( count == 0 ): 
@@ -563,6 +563,12 @@ def queryDistanceFromDriveTable( start_simple_lng, start_simple_lat, end_simple_
         json_str = aMap.requestDirveRoute(start_simple_lng, start_simple_lat, end_simple_lng, end_simple_lat )
         path = aMap.parseDiverRoute(json_str)
         distance = path['distance']
+        insert_sql = "INSERT INTO drive_route_tb( id, route_name, route_hash, start_area_id, end_area_id,\
+                          distance, duration, update_time) \
+                          VALUES(NULL, '%s', 'null', %d, %d,   %d,%d, now() ) " %\
+                      ( route_name, 0,0,path['distance'], path['duration'])
+        #print insert_sql
+        executeDB(cursor, insert_sql)
     else:
         result = cursor.fetchone()
         distance = result[0]
@@ -571,11 +577,12 @@ def queryDistanceFromDriveTable( start_simple_lng, start_simple_lat, end_simple_
 
 #***************************************************************
 #存储所有点对应的方块
-def createRecommendFactorTable(cursor):
-    sql ="DROP TABLE IF EXISTS recommend_2178_tb"
+def createRecommendFactorTable(cursor, table_name ):
+    sql ="DROP TABLE IF EXISTS %s"%table_name
     executeDB( cursor, sql )
     
-    create_point_area_tb_sql = '''create table if not exists recommend_2178_tb(
+    
+    create_point_area_tb_sql = '''create table if not exists %s(
                     id            int unsigned not null auto_increment primary key comment '粗化经纬度后，起点对应的方块编号',
                     car_route_id       int unsigned not null comment '车主路线',
                     passenger_route_id       int unsigned not null comment '匹配的乘客路线',
@@ -584,13 +591,9 @@ def createRecommendFactorTable(cursor):
                     car_extra_factor        float not null default 0.0 comment "车主绕行因子： 越小越好",
                     car_earn_factor         float  not null default 0.0 comment "车主收益因子： 越大越好",
                     update_time     timestamp not null
-        )
-    '''
+        )'''%table_name
     #print create_point_area_tb_sql
     cursor.execute(create_point_area_tb_sql)
 
 
-
-    
-    
         
