@@ -30,8 +30,6 @@ def setupData():
     RouteInfo.updateAddressInPointAreaTable()
     RouteInfo.updateAreaIdInRouteTable()
     
-    
-    
     #3
     #新建驾车路径的数据库
     #RouteInfo.createDriveRouteTable()
@@ -92,7 +90,15 @@ def getRouteMatchScore(car, passenger):
     car_extra_factor= car_extra_distance / distance_0 
     #计算车主收益因子：  r2 = D2 / D0，(0< r2 )  越大越好
     car_earn_factor= distance_2 /distance_0
-    match_factor = 0.0
+    
+    car_extra_plus = 1.5
+    if( car_earn_factor< 0.1 ):
+        match_factor = 0
+    elif(car_extra_factor==0 and  car_earn_factor == 0 ):
+        match_factor = 0
+    else:
+        match_factor = car_earn_factor - car_extra_plus*car_extra_factor
+        
     #print "getRouteMatchScore, d0=%d, d1=%d, d2=%d, d3=%d"%(distance_0, distance_1, distance_2, distance_3)
     # print "车主绕行距离=%d,  车主绕行因子=%f,  车主收益因子=%f"%( car_extra_distance, car_extra_factor, car_earn_factor)   
     return (match_factor, car_extra_distance, car_extra_factor, car_earn_factor)     
@@ -190,17 +196,27 @@ def findMatchRoute(test_car_route_id ):
 #实验用司机路线　route_id=2178,  
 #中关村街道恒兴大厦(东门)                start_simple( 116.335, 39.985),     area_id =1
 #通州区梨园地区新华联家园(南区)        end_simple( 116.645, 39.890),     area_id=326
+example_car_route_list=[2178, 20, 814, 928, 3690, 1090, 1591, 2531, 788, 1377, 1490]
 
-#findMatchRoute(2178)
-findMatchRoute(20)
-findMatchRoute(814)
-findMatchRoute(928)
+#findMatchRoute(1377)
 
 
-    
+for route_id in example_car_route_list:
+    #findMatchRoute(route_id)
+    RouteInfo.updateRecommendRouteInRouteTable( route_id)
+
 #SELECT * FROM youche_info.recommend_2178_tb order by car_extra_factor limit 30;
 #SELECT * FROM `recommend_route_tb` WHERE start_address LIKE '%大兴%'
 #SELECT * FROM youche_info.recommend_20_tb where car_extra_factor <0.1 order by car_earn_factor desc limit 30;
+#SELECT * FROM youche_info.recommend_2178_tb order by match_factor desc limit 100;
+#SELECT * FROM youche_info.recommend_route_tb where recommend_route_id IS NULL limit 100;
+    
+    
+    
+
+
+    
+
 
 
 

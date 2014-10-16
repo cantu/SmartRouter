@@ -398,6 +398,34 @@ def updateAddressInRouteTable( ):
     cursor.close()
     
 #***********************************************************************************
+#更新路线列表中起点和终点地址
+def updateRecommendRouteInRouteTable( route_id):
+   
+    #go through all route in database 
+    cursor = initDatabase()
+    count = 0
+    try:
+        #SELECT * FROM youche_info.recommend_814_tb order by match_factor desc limit 100;
+        table_name = 'recommend_'+ str(route_id) +'_tb'
+        select_sql ="SELECT * FROM %s order by match_factor desc limit 30"%table_name
+        count = cursor.execute(select_sql)
+        print 'database return %d line'%(count)
+        result = cursor.fetchall()
+    except Exception, e:
+        print e
+    recommend_str=''
+    passenger_route_id = 0
+    if result:
+        for item in result:
+            passenger_route_id = item[2]
+            recommend_str = recommend_str + str(passenger_route_id) + ','
+            update_sql = "UPDATE recommend_route_tb SET recommend_route_id='%s' WHERE route_id = %d"%\
+                                (recommend_str, route_id)
+            print update_sql
+            executeDB(cursor, update_sql)
+    print 'finish update address to route table'
+    cursor.close()
+#***********************************************************************************
 #更新点方块列表中各个点的地址
 def updateAddressInPointAreaTable( ):
      #go through all route in database 
