@@ -418,11 +418,14 @@ def updateRecommendRouteInRouteTable( route_id):
     if result:
         for item in result:
             passenger_route_id = item[2]
-            recommend_str = recommend_str + str(passenger_route_id) + ','
-            update_sql = "UPDATE recommend_route_tb SET recommend_route_id='%s' WHERE route_id = %d"%\
-                                (recommend_str, route_id)
-            print update_sql
-            executeDB(cursor, update_sql)
+            match_factor = item[3]
+            if match_factor > 0:
+                recommend_str = recommend_str + str(passenger_route_id) + ','
+            
+        update_sql = "UPDATE recommend_route_tb SET recommend_route_id='%s' WHERE route_id = %d"%\
+                            (recommend_str, route_id)
+        print update_sql
+        executeDB(cursor, update_sql)
     print 'finish update address to route table'
     cursor.close()
 #***********************************************************************************

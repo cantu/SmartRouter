@@ -205,6 +205,7 @@ for route_id in example_car_route_list:
     #findMatchRoute(route_id)
     RouteInfo.updateRecommendRouteInRouteTable( route_id)
 
+print 'finish '
 #SELECT * FROM youche_info.recommend_2178_tb order by car_extra_factor limit 30;
 #SELECT * FROM `recommend_route_tb` WHERE start_address LIKE '%大兴%'
 #SELECT * FROM youche_info.recommend_20_tb where car_extra_factor <0.1 order by car_earn_factor desc limit 30;
